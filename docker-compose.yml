@@ -1,0 +1,73 @@
+services:
+  app:
+    image: devops-project:${TAG:-latest}
+    container_name: devops-app
+    ports:
+      - "8080:80"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - loki
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://localhost:3100/loki/api/v1/push"
+        loki-retries: "5"
+        loki-batch-size: "400"
+        loki-external-labels: "service=app,project=devops-project"
+    networks:
+      - appnet
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: devops-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://localhost:3100/loki/api/v1/push"
+        loki-external-labels: "service=postgres,project=devops-project"
+    networks:
+      - appnet
+
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: devops-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/config.yaml
+    volumes:
+      - ./docker/loki-config.yaml:/etc/loki/config.yaml:ro
+      - loki_data:/loki
+    networks:
+      - appnet
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: devops-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    depends_on:
+      - loki
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - appnet
+
+volumes:
+  postgres_data:
+  loki_data:
+  grafana_data:
+
+networks:
+  appnet:

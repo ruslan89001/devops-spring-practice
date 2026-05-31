@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Главная{% endblock %}
+
+{% block body %}
+    <div class="container mt-5">
+        <div class="jumbotron bg-light p-5 rounded">
+            <h1 class="display-4">Бронирование коворкинг-пространств</h1>
+            <p class="lead">Найдите идеальное рабочее пространство для вашего бизнеса</p>
+            <hr class="my-4">
+            <p>Удобное бронирование, гибкие условия, современные пространства</p>
+            <a class="btn btn-primary btn-lg" href="{{ path('app_spaces') }}" role="button">
+                <i class="fas fa-search"></i> Посмотреть все пространства
+            </a>
+        </div>
+
+        <h2 class="mt-5 mb-4">Популярные пространства</h2>
+        <div class="row">
+            {% for space in spaces %}
+                <div class="col-md-4 mb-4">
+                    <div class="card space-card h-100">
+                        {% if space.photo %}
+                            <img src="{{ asset('uploads/spaces/' ~ space.photo) }}" class="card-img-top" alt="{{ space.name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-building fa-3x text-white"></i>
+                            </div>
+                        {% endif %}
+
+                        <div class="card-body">
+                            <h5 class="card-title">{{ space.name }}</h5>
+                            <p class="card-text text-muted">
+                                <i class="fas fa-map-marker-alt"></i> {{ space.address }}
+                            </p>
+                            <p class="h5 text-primary">{{ space.price }} ₽/день</p>
+                            <a href="{{ path('app_space_show', {id: space.id}) }}" class="btn btn-primary w-100">
+                                Подробнее
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

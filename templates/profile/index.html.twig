@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Профиль{% endblock %}
+
+{% block body %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Мой профиль</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Имя</label>
+                                <input type="text" name="name" id="name" class="form-control" value="{{ user.name }}" required minlength="2" maxlength="100">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" name="email" id="email" class="form-control" value="{{ user.email }}" required>
+                            </div>
+
+                            <hr>
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Новый пароль (оставьте пустым, если не хотите менять)</label>
+                                <input type="password" name="password" id="password" class="form-control" minlength="6">
+                            </div>
+
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-save"></i> Сохранить изменения
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

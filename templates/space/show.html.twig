@@ -1,0 +1,263 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ space.name }}{% endblock %}
+
+{% block body %}
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-8">
+                {% if space.photo %}
+                    <img src="{{ asset('uploads/spaces/' ~ space.photo) }}" class="img-fluid rounded mb-4" alt="{{ space.name }}">
+                {% endif %}
+
+                <h1>{{ space.name }}</h1>
+                <p class="text-muted">
+                    <i class="fas fa-map-marker-alt"></i> {{ space.address }}
+                </p>
+
+                {% if average_rating %}
+                    <div class="mb-3">
+                    <span class="text-warning">
+                        {% for i in 1..5 %}
+                            <i class="fas fa-star{% if i > average_rating|round %}-o{% endif %}"></i>
+                        {% endfor %}
+                    </span>
+                        <span class="text-muted">({{ average_rating|number_format(1) }})</span>
+                    </div>
+                {% endif %}
+
+                <p>{{ space.description }}</p>
+
+                <h3 class="text-primary">{{ space.price }} ₽/день</h3>
+
+                {% if is_granted('ROLE_USER') %}
+                    <hr>
+                    <h4>Забронировать</h4>
+                    <form id="bookingForm">
+                        <input type="hidden" name="space_id" value="{{ space.id }}">
+                        <div class="mb-3">
+                            <label for="booking_date" class="form-label">Дата</label>
+                            <input type="date" name="booking_date" id="booking_date" class="form-control" required min="{{ "now"|date("Y-m-d") }}">
+                        </div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-calendar-check"></i> Забронировать
+                        </button>
+                    </form>
+                {% else %}
+                    <div class="alert alert-info mt-4">
+                        <a href="{{ path('app_login') }}">Войдите</a>, чтобы забронировать это пространство
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="col-md-4">
+                <h4>Отзывы ({{ reviews|length }})</h4>
+
+                {% if is_granted('ROLE_USER') %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6>Оставить отзыв</h6>
+                            <form id="reviewForm">
+                                <input type="hidden" name="space_id" value="{{ space.id }}">
+                                <div class="mb-3">
+                                    <label class="form-label">Рейтинг</label>
+                                    <div class="star-rating" id="starRating">
+                                        {% for i in 1..5 %}
+                                            <i class="fas fa-star" data-rating="{{ i }}"></i>
+                                        {% endfor %}
+                                    </div>
+                                    <input type="hidden" name="rating" id="ratingInput" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="comment" class="form-label">Комментарий</label>
+                                    <textarea name="comment" id="comment" class="form-control" rows="3"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm">Отправить</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div id="reviewsList">
+                    {% for review in reviews %}
+                        <div class="card mb-2" data-review-id="{{ review.id }}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <strong>{{ review.user.name }}</strong>
+                                    {% if is_granted('ROLE_USER') and app.user.id == review.user.id %}
+                                        <button class="btn btn-sm btn-danger delete-review" data-review-id="{{ review.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                <div class="text-warning">
+                                    {% for i in 1..5 %}
+                                        <i class="fas fa-star{% if i > review.rating %}-o{% endif %}"></i>
+                                    {% endfor %}
+                                </div>
+                                {% if review.comment %}
+                                    <p class="mb-0 mt-2">{{ review.comment }}</p>
+                                {% endif %}
+                                <small class="text-muted">{{ review.createdAt|date('d.m.Y') }}</small>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Пока нет отзывов</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        console.log('JavaScript loaded');
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM ready');
+
+            let isSubmitting = false;
+
+            const bookingForm = document.getElementById('bookingForm');
+            console.log('Booking form found:', bookingForm);
+
+            if (bookingForm) {
+                bookingForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    console.log('Form submit triggered');
+
+                    if (isSubmitting) {
+                        console.log('Already submitting, blocked');
+                        return;
+                    }
+
+                    isSubmitting = true;
+
+                    const formData = new FormData(bookingForm);
+                    console.log('Form data:', Object.fromEntries(formData));
+
+                    const submitBtn = bookingForm.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка...';
+
+                    console.log('Sending POST to /bookings/create');
+
+                    fetch('/bookings/create', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                        .then(response => {
+                            console.log('Response received:', response.status);
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Response data:', data);
+                            if (data.success) {
+                                alert('✓ ' + data.message);
+                                window.location.href = '/bookings';
+                            } else {
+                                alert('✗ ' + data.message);
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = originalText;
+                                isSubmitting = false;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Fetch error:', error);
+                            alert('✗ Ошибка: ' + error.message);
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                            isSubmitting = false;
+                        });
+                });
+            } else {
+                console.error('Booking form NOT found!');
+            }
+
+            const stars = document.querySelectorAll('#starRating .fa-star');
+            const ratingInput = document.getElementById('ratingInput');
+
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    const rating = this.dataset.rating;
+                    ratingInput.value = rating;
+
+                    stars.forEach(s => {
+                        if (s.dataset.rating <= rating) {
+                            s.classList.add('active');
+                        } else {
+                            s.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            const reviewForm = document.getElementById('reviewForm');
+            if (reviewForm) {
+                let isReviewSubmitting = false;
+
+                reviewForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    if (isReviewSubmitting) return;
+                    isReviewSubmitting = true;
+
+                    const formData = new FormData(reviewForm);
+
+                    fetch('/reviews', {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert('✓ ' + data.message);
+                                location.reload();
+                            } else {
+                                alert('✗ ' + data.message);
+                                isReviewSubmitting = false;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('✗ Ошибка при добавлении отзыва');
+                            isReviewSubmitting = false;
+                        });
+                });
+            }
+
+            const deleteButtons = document.querySelectorAll('.delete-review');
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const reviewId = this.dataset.reviewId;
+
+                    if (confirm('Удалить отзыв?')) {
+                        fetch(`/reviews/${reviewId}`, {
+                            method: 'DELETE'
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    alert('✓ ' + data.message);
+                                    location.reload();
+                                } else {
+                                    alert('✗ ' + data.message);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('✗ Ошибка при удалении отзыва');
+                            });
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

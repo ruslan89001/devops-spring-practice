@@ -1,0 +1,158 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Управление пространствами{% endblock %}
+
+{% block body %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Управление пространствами</h1>
+
+        <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#createSpaceModal">
+            <i class="fas fa-plus"></i> Добавить пространство
+        </button>
+
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Фото</th>
+                    <th>Название</th>
+                    <th>Адрес</th>
+                    <th>Цена</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for space in spaces %}
+                    <tr>
+                        <td>{{ space.id }}</td>
+                        <td>
+                            {% if space.photo %}
+                                <img src="{{ asset('uploads/spaces/' ~ space.photo) }}" style="width: 50px; height: 50px; object-fit: cover;">
+                            {% else %}
+                                <i class="fas fa-image text-muted"></i>
+                            {% endif %}
+                        </td>
+                        <td>{{ space.name }}</td>
+                        <td>{{ space.address }}</td>
+                        <td>{{ space.price }} ₽</td>
+                        <td>
+                            {% if space.status == 'active' %}
+                                <span class="badge bg-success">Активно</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Неактивно</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editSpaceModal{{ space.id }}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form method="post" action="{{ path('app_admin_space_delete', {id: space.id}) }}" style="display:inline;" onsubmit="return confirm('Удалить пространство?');">
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <div class="modal fade" id="editSpaceModal{{ space.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Редактировать пространство</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="post" action="{{ path('app_admin_space_edit', {id: space.id}) }}" enctype="multipart/form-data">
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Название</label>
+                                            <input type="text" name="name" class="form-control" value="{{ space.name }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Адрес</label>
+                                            <input type="text" name="address" class="form-control" value="{{ space.address }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Описание</label>
+                                            <textarea name="description" class="form-control" rows="3">{{ space.description }}</textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Цена (₽/день)</label>
+                                            <input type="number" name="price" class="form-control" value="{{ space.price }}" step="0.01" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Фото</label>
+                                            <input type="file" name="photo" class="form-control" accept="image/*">
+                                            {% if space.photo %}
+                                                <small class="text-muted">Текущее: {{ space.photo }}</small>
+                                            {% endif %}
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Статус</label>
+                                            <select name="status" class="form-select">
+                                                <option value="active" {% if space.status == 'active' %}selected{% endif %}>Активно</option>
+                                                <option value="inactive" {% if space.status == 'inactive' %}selected{% endif %}>Неактивно</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade" id="createSpaceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Создать пространство</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{{ path('app_admin_space_create') }}" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Название</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Адрес</label>
+                            <input type="text" name="address" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Описание</label>
+                            <textarea name="description" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Цена (₽/день)</label>
+                            <input type="number" name="price" class="form-control" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Фото</label>
+                            <input type="file" name="photo" class="form-control" accept="image/*">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Статус</label>
+                            <select name="status" class="form-select">
+                                <option value="active">Активно</option>
+                                <option value="inactive">Неактивно</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary">Создать</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
