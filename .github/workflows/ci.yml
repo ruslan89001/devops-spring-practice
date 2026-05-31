@@ -80,7 +80,7 @@ jobs:
             *Сборка успешна!*
             Репозиторий: `${{ github.repository }}`
             Ветка/тег: `${{ github.ref_name }}`
-            браз: `ghcr.io/${{ github.repository }}:latest`
+            Образ: `ghcr.io/${{ github.repository }}:latest`
             [Посмотреть запуск](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
       - name: Notify Telegram — Failure
